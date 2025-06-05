@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConstruINDO - Técnico em Edificações</title>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">ConstruINDO</div>
+            <button class="mobile-menu-toggle" onclick="toggleMenu()">☰</button>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#sobre">Sobre</a></li>
+                <li><a href="#contato">Contato</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Aprenda a ser um verdadeiro Técnico em Edificações!</h1>
+            <a href="páginas/solos.html">Construa seu futuro!</a>
+        </div>
+        <div class="hero-text">
+            <p>Aqui você pode acessar diversas disciplinas que os Técnicos em Edificações têm contato todos os dias! Nossa equipe incrível usou diversas formas divertidas e interessantes de se aprender!</p>
+            <p>Você é da área musical? Temos paródias <strong>inéditas, criativas e autorais</strong> ao final de cada capítulo! Relembre o que estudou e não esqueça nunca mais! Com certeza vai grudar na sua cabeça...</p>
+            <p>Não manja da música, mas gosta de jogos? Isso não é um problema! Ao final de cada capítulo também disponibilizamos formas mais interativas de se aprender!</p>
+        </div>
+    </section>
+
+    <section class="logo-section">
+        <div class="logo-content"><img src="imagens/logo.png" alt="Logo"></div>
+    </section>
+
+    <section class="team-section">
+        <h2 class="team-title animate-on-scroll">Conheça a Equipe:</h2>
+        <div class="team-grid">
+            <div class="team-member animate-on-scroll">
+                <div class="member-photo" style="background-image: url('');" onclick="openMemberModal('Bruna Rocha', 'bruna')"></div>
+                <p>Bruna Rocha</p>
+            </div>
+            <div class="team-member animate-on-scroll">
+                <div class="member-photo" style="background-image: url('/api/placeholder/100/100');" onclick="openMemberModal('Carlos Mizael', 'carlos')"></div>
+                <p>Carlos Mizael</p>
+            </div>
+            <div class="team-member animate-on-scroll">
+                <div class="member-photo" style="background-image: url('/api/placeholder/100/100');" onclick="openMemberModal('Esther Menezes', 'esther')"></div>
+                <p>Esther Menezes</p>
+            </div>
+            <div class="team-member animate-on-scroll">
+                <div class="member-photo" style="background-image: url('/api/placeholder/100/100');" onclick="openMemberModal('Rafael Oliveira', 'rafael')"></div>
+                <p>Rafael Oliveira</p>
+            </div>
+        </div>
+
+        <!-- Modal for team member details -->
+        <div id="memberModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Detalhes do Membro</h2>
+                    <button class="close-btn" onclick="closeModal()">&times;</button>
+                </div>
+                <iframe id="memberFrame" class="modal-iframe" src=""></iframe>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Team member modal functions
+        function openMemberModal(name, id) {
+            const modal = document.getElementById('memberModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const memberFrame = document.getElementById('memberFrame');
+            
+            modalTitle.textContent = name;
+            
+            // Create dynamic content for each member
+            const memberContent = createMemberPage(name, id);
+            const blob = new Blob([memberContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            
+            memberFrame.src = url;
+            modal.style.display = 'block';
+            
+            // Prevent body scrolling when modal is open
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('memberModal');
+            const memberFrame = document.getElementById('memberFrame');
+            
+            modal.style.display = 'none';
+            memberFrame.src = '';
+            
+            // Restore body scrolling
+            document.body.style.overflow = 'auto';
+        }
+
+        function createMemberPage(name, id) {
+            const memberData = {
+                bruna: {
+                    role: 'Engenheira Civil',
+                    experience: '7 anos',
+                    specialty: 'Projetos Hidráulicos',
+                    description: 'Especialista em sistemas hidráulicos e sanitários, com foco em eficiência e sustentabilidade.',
+                    skills: ['AutoCAD', 'Hydros', 'QiBuilder', 'Gestão Hídrica'],
+                    email: 'bruna.rocha@construindo.com'
+                },
+                carlos: {
+                    role: 'Arquiteto',
+                    experience: '12 anos',
+                    specialty: 'Arquitetura Comercial',
+                    description: 'Focado em projetos comerciais e corporativos, combinando funcionalidade com design inovador.',
+                    skills: ['Revit', 'ArchiCAD', 'V-Ray', 'Design Thinking'],
+                    email: 'carlos.mizael@construindo.com'
+                },
+                esther: {
+                    role: 'Engenheira de Materiais',
+                    experience: '9 anos',
+                    specialty: 'Controle de Qualidade',
+                    description: 'Responsável pela análise e especificação de materiais, garantindo qualidade e durabilidade.',
+                    skills: ['Ensaios Laboratoriais', 'NBR', 'Controle de Qualidade', 'Pesquisa'],
+                    email: 'esther.menezes@construindo.com'
+                },
+                rafael: {
+                    role: 'Engenheiro Eletricista',
+                    experience: '11 anos',
+                    specialty: 'Sistemas Elétricos Prediais',
+                    description: 'Especialista em projetos elétricos prediais, automação e sistemas de energia renovável.',
+                    skills: ['DIALux', 'AutoCAD Electrical', 'CLP', 'Energia Solar'],
+                    email: 'rafael.oliveira@construindo.com'
+                }
+            };
+
+            const member = memberData[id];
+            
+            return `
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>${name} - Perfil</title>
+                <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    body {
+                        font-family: Arial, sans-serif;
+                        background: linear-gradient(135deg, #F5DEB3, #DEB887);
+                        padding: 2rem;
+                        min-height: 100vh;
+                    }
+                    .profile-container {
+                        max-width: 800px;
+                        margin: 0 auto;
+                        background: white;
+                        border-radius: 15px;
+                        padding: 2rem;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                        animation: fadeInUp 0.6s ease-out;
+                    }
+                    .profile-header {
+                        text-align: center;
+                        margin-bottom: 2rem;
+                        padding-bottom: 1rem;
+                        border-bottom: 2px solid #8B4513;
+                    }
+                    .profile-photo {
+                        width: 150px;
+                        height: 150px;
+                        border-radius: 50%;
+                        margin: 0 auto 1rem;
+                        background: url('/api/placeholder/150/150');
+                        background-size: cover;
+                        background-position: center;
+                        border: 4px solid #8B4513;
+                    }
+                    .profile-name {
+                        font-size: 2rem;
+                        color: #8B4513;
+                        margin-bottom: 0.5rem;
+                    }
+                    .profile-role {
+                        font-size: 1.2rem;
+                        color: #A0522D;
+                        font-weight: 600;
+                    }
+                    .profile-content {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 2rem;
+                        margin-top: 2rem;
+                    }
+                    .info-section {
+                        background: #F5F5F5;
+                        padding: 1.5rem;
+                        border-radius: 10px;
+                        border-left: 4px solid #8B4513;
+                    }
+                    .info-section h3 {
+                        color: #8B4513;
+                        margin-bottom: 1rem;
+                        font-size: 1.3rem;
+                    }
+                    .info-section p {
+                        line-height: 1.6;
+                        color: #333;
+                    }
+                    .skills-list {
+                        list-style: none;
+                        padding: 0;
+                    }
+                    .skills-list li {
+                        background: #8B4513;
+                        color: white;
+                        padding: 0.5rem 1rem;
+                        margin: 0.5rem 0;
+                        border-radius: 20px;
+                        display: inline-block;
+                        margin-right: 0.5rem;
+                        font-size: 0.9rem;
+                    }
+                    .contact-info {
+                        grid-column: 1 / -1;
+                        background: #8B4513;
+                        color: white;
+                        padding: 1.5rem;
+                        border-radius: 10px;
+                        text-align: center;
+                    }
+                    .contact-info a {
+                        color: #FFD700;
+                        text-decoration: none;
+                        font-weight: bold;
+                    }
+                    @keyframes fadeInUp {
+                        from {
+                            opacity: 0;
+                            transform: translateY(30px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                    @media (max-width: 768px) {
+                        .profile-content {
+                            grid-template-columns: 1fr;
+                        }
+                        body {
+                            padding: 1rem;
+                        }
+                        .profile-container {
+                            padding: 1.5rem;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="profile-container">
+                    <div class="profile-header">
+                        <div class="profile-photo"></div>
+                        <h1 class="profile-name">${name}</h1>
+                        <p class="profile-role">${member.role}</p>
+                    </div>
+                    
+                    <div class="profile-content">
+                        <div class="info-section">
+                            <h3>Experiência</h3>
+                            <p>${member.experience} de experiência profissional</p>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3>Especialidade</h3>
+                            <p>${member.specialty}</p>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3>Sobre</h3>
+                            <p>${member.description}</p>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3>Habilidades</h3>
+                            <ul class="skills-list">
+                                ${member.skills.map(skill => `<li>${skill}</li>`).join('')}
+                            </ul>
+                        </div>
+                        
+                        <div class="contact-info">
+                            <h3>Contato</h3>
+                            <p>Email: <a href="mailto:${member.email}">${member.email}</a></p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('memberModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Mobile menu toggle
+        function toggleMenu() {
+            const navLinks = document.getElementById('navLinks');
+            navLinks.classList.toggle('active');
+        }
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animated');
+                }
+            });
+        }, observerOptions);
+
+        // Observe all elements with animate-on-scroll class
+        document.querySelectorAll('.animate-on-scroll').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Add some interactive hover effects
+        document.querySelectorAll('.member-photo').forEach(photo => {
+            photo.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.1) rotate(5deg)';
+            });
+            
+            photo.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1) rotate(0deg)';
+            });
+        });
+
+        // Button click animation
+        document.querySelector('.cta-button').addEventListener('click', function(e) {
+            e.preventDefault();
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(e) {
+            const nav = document.querySelector('.nav');
+            const navLinks = document.getElementById('navLinks');
+            
+            if (!nav.contains(e.target) && navLinks.classList.contains('active')) {
+                navLinks.classList.remove('active');
+            }
+        });
+    </script>
+    <div class="mascote">
+        <h1>Conheça nosso mascote! Esse é táuba, um construtor nato!</h1>
+        <img src="imagens/tauba.png" alt="">
+    </div>
+</body>
+</html>
