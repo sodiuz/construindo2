@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConstruINDO - Jogo da Cobrinha: Mecânica dos Solos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #F5DEB3 0%, #DEB887 50%, #D2B48C 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #8B4513, #A0522D);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shine 3s infinite;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .mascot {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            animation: bounce 2s infinite;
+        }
+
+        .game-area {
+            background: linear-gradient(135deg, #FFF8DC, #F5DEB3);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 3px solid #8B4513;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: linear-gradient(45deg, #8B4513, #A0522D);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .game-canvas {
+            border: 4px solid #8B4513;
+            border-radius: 10px;
+            background: #2F4F2F;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+            margin: 0 auto;
+            display: block;
+        }
+
+        .controls {
+            margin: 2rem 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .control-btn {
+            background: linear-gradient(45deg, #8B4513, #A0522D);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(139, 69, 19, 0.3);
+        }
+
+        .control-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(139, 69, 19, 0.4);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .question-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .question-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: slideIn 0.4s ease;
+        }
+
+        .question-header {
+            background: linear-gradient(45deg, #8B4513, #A0522D);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        .answer-btn {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, #F5DEB3, #DEB887);
+            color: #8B4513;
+            border: 2px solid #8B4513;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .answer-btn:hover {
+            background: linear-gradient(135deg, #DEB887, #CD853F);
+            transform: translateX(10px);
+        }
+
+        .correct {
+            background: linear-gradient(135deg, #90EE90, #32CD32) !important;
+            color: white !important;
+            border-color: #228B22 !important;
+        }
+
+        .incorrect {
+            background: linear-gradient(135deg, #FFB6C1, #FF69B4) !important;
+            color: white !important;
+            border-color: #DC143C !important;
+        }
+
+        .game-over {
+            background: linear-gradient(135deg, #FFB6C1, #FF69B4);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin: 2rem 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .instructions {
+            background: linear-gradient(135deg, #FFF8DC, #F5DEB3);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border-left: 5px solid #8B4513;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .instructions h3 {
+            color: #8B4513;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        .instructions ul {
+            color: #5D4037;
+            line-height: 1.8;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .score-board {
+                flex-direction: column;
+                gap: 0.5rem;
+                text-align: center;
+            }
+            
+            .controls {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+            
+            .control-btn {
+                padding: 0.8rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <div class="mascot">
+                <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="120" y="120" width="160" height="120" fill="#CD853F" stroke="#8B4513" stroke-width="4" rx="8"/>
+                    <rect x="150" y="60" width="100" height="80" fill="#DEB887" stroke="#8B4513" stroke-width="4" rx="8"/>
+                    <rect x="160" y="85" width="30" height="20" fill="#000" rx="10"/>
+                    <rect x="210" y="85" width="30" height="20" fill="#000" rx="10"/>
+                    <rect x="190" y="90" width="20" height="4" fill="#000"/>
+                    <path d="M 170 115 Q 200 125 230 115" stroke="#8B4513" stroke-width="3" fill="none"/>
+                    <circle cx="200" cy="180" r="20" fill="#FFD700" stroke="#8B4513" stroke-width="2"/>
+                    <text x="200" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#8B4513">G</text>
+                </svg>
+            </div>
+            <h1>🐍 Cobrinha dos Solos</h1>
+            <p>Aprenda Mecânica dos Solos jogando!</p>
+        </div>
+
+        <div class="instructions">
+            <h3>📚 Como Jogar:</h3>
+            <ul>
+                <li>🎯 Use as setas ou botões para mover a cobrinha</li>
+                <li>🍎 Colete as frutas vermelhas para crescer</li>
+                <li>❓ A cada fruta coletada, responda uma pergunta sobre solos</li>
+                <li>✅ Respostas corretas aumentam sua pontuação</li>
+                <li>⚠️ Evite bater nas paredes ou em si mesmo</li>
+                <li>🏆 Desafie-se a aprender mais sobre Mecânica dos Solos!</li>
+            </ul>
+        </div>
+
+        <div class="game-area">
+            <div class="score-board">
+                <div>Pontuação: <span id="score">0</span></div>
+                <div>Perguntas Corretas: <span id="correct-answers">0</span></div>
+                <div>Nível: <span id="level">1</span></div>
+            </div>
+
+            <canvas id="gameCanvas" class="game-canvas" width="400" height="400"></canvas>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" onclick="startGame()">🎮 Iniciar Jogo</button>
+            <button class="control-btn" onclick="pauseGame()">⏸️ Pausar</button>
+            <button class="control-btn" onclick="changeDirection('UP')">⬆️ Cima</button>
+            <button class="control-btn" onclick="changeDirection('DOWN')">⬇️ Baixo</button>
+            <button class="control-btn" onclick="changeDirection('LEFT')">⬅️ Esquerda</button>
+            <button class="control-btn" onclick="changeDirection('RIGHT')">➡️ Direita</button>
+        </div>
+
+        <div id="gameOverDiv" class="game-over" style="display: none;">
+            <h2>🎯 Fim de Jogo!</h2>
+            <p>Pontuação Final: <span id="finalScore">0</span></p>
+            <p>Respostas Corretas: <span id="finalCorrect">0</span></p>
+            <button class="control-btn" onclick="restartGame()" style="margin-top: 1rem;">🔄 Jogar Novamente</button>
+        </div>
+    </div>
+
+    <!-- Question Modal -->
+    <div id="questionModal" class="question-modal">
+        <div class="question-content">
+            <div class="question-header">
+                <h3>🧠 Pergunta sobre Mecânica dos Solos</h3>
+            </div>
+            <div id="questionText" class="question-text"></div>
+            <div id="answerOptions"></div>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+
+        let snake = [
+            {x: 10, y: 10}
+        ];
+        let food = {};
+        let dx = 0;
+        let dy = 0;
+        let score = 0;
+        let correctAnswers = 0;
+        let level = 1;
+        let gameRunning = false;
+        let gamePaused = false;
+
+        // Soil mechanics questions database
+        const questions = [
+            {
+                question: "Qual é a principal diferença entre solo residual e solo transportado?",
+                options: [
+                    "Solo residual é mais resistente",
+                    "Solo residual se forma no local da rocha matriz, transportado é movido por agentes externos",
+                    "Solo transportado é sempre mais poroso",
+                    "Não há diferença significativa"
+                ],
+                correct: 1
+            },
+            {
+                question: "O que representa o índice de vazios (e) de um solo?",
+                options: [
+                    "A relação entre volume de vazios e volume total",
+                    "A relação entre volume de vazios e volume de sólidos",
+                    "A relação entre peso e volume",
+                    "A quantidade de água no solo"
+                ],
+                correct: 1
+            },
+            {
+                question: "Qual granulometria caracteriza uma argila?",
+                options: [
+                    "Partículas entre 4,75mm e 2,0mm",
+                    "Partículas entre 2,0mm e 0,075mm",
+                    "Partículas menores que 0,075mm",
+                    "Partículas menores que 0,002mm"
+                ],
+                correct: 3
+            },
+            {
+                question: "O que é o limite de liquidez (LL) de um solo?",
+                options: [
+                    "Máximo teor de umidade que o solo pode absorver",
+                    "Teor de umidade onde o solo passa do estado líquido para plástico",
+                    "Teor de umidade onde o solo passa do estado plástico para líquido",
+                    "Ponto onde o solo se torna impermeável"
+                ],
+                correct: 2
+            },
+            {
+                question: "Qual a finalidade do ensaio de compactação Proctor?",
+                options: [
+                    "Determinar a resistência do solo",
+                    "Medir a permeabilidade",
+                    "Encontrar a umidade ótima e densidade máxima do solo",
+                    "Calcular o índice de vazios"
+                ],
+                correct: 2
+            },
+            {
+                question: "O que caracteriza um solo bem graduado?",
+                options: [
+                    "Possui partículas de vários tamanhos bem distribuídas",
+                    "Tem partículas todas do mesmo tamanho",
+                    "É composto apenas por areia",
+                    "Tem alta plasticidade"
+                ],
+                correct: 0
+            },
+            {
+                question: "Qual é a principal função da compactação do solo?",
+                options: [
+                    "Aumentar a permeabilidade",
+                    "Reduzir vazios e aumentar resistência e estabilidade",
+                    "Diminuir a densidade",
+                    "Aumentar a plasticidade"
+                ],
+                correct: 1
+            },
+            {
+                question: "O que representa o grau de saturação (Sr) de um solo?",
+                options: [
+                    "Quantidade total de água no solo",
+                    "Relação entre volume de água e volume de vazios",
+                    "Peso da água dividido pelo peso total",
+                    "Volume total de vazios"
+                ],
+                correct: 1
+            },
+            {
+                question: "Qual método é usado para determinar a granulometria de solos finos?",
+                options: [
+                    "Peneiramento",
+                    "Sedimentação",
+                    "Compactação",
+                    "Permeabilidade"
+                ],
+                correct: 1
+            },
+            {
+                question: "O que é o índice de plasticidade (IP)?",
+                options: [
+                    "LL - LP (Limite de Liquidez menos Limite de Plasticidade)",
+                    "LL + LP (Limite de Liquidez mais Limite de Plasticidade)",
+                    "LL / LP (Limite de Liquidez dividido por Limite de Plasticidade)",
+                    "LP - LL (Limite de Plasticidade menos Limite de Liquidez)"
+                ],
+                correct: 0
+            },
+            {
+                question: "Qual é o principal objetivo da drenagem em obras de terra?",
+                options: [
+                    "Aumentar a umidade do solo",
+                    "Controlar a pressão neutra e estabilizar taludes",
+                    "Diminuir a densidade do solo",
+                    "Aumentar a plasticidade"
+                ],
+                correct: 1
+            },
+            {
+                question: "O que caracteriza um solo expansivo?",
+                options: [
+                    "Solo que se contrai com a umidade",
+                    "Solo que aumenta de volume significativamente com aumento de umidade",
+                    "Solo muito permeável",
+                    "Solo com baixa plasticidade"
+                ],
+                correct: 1
+            }
+        ];
+
+        let currentQuestion = null;
+
+        // Initialize game
+        function initGame() {
+            generateFood();
+            drawGame();
+        }
+
+        // Generate random food position
+        function generateFood() {
+            food = {
+                x: Math.floor(Math.random() * tileCount),
+                y: Math.floor(Math.random() * tileCount)
+            };
+            
+            // Make sure food doesn't spawn on snake
+            for (let segment of snake) {
+                if (segment.x === food.x && segment.y === food.y) {
+                    generateFood();
+                    return;
+                }
+            }
+        }
+
+        // Draw everything
+        function drawGame() {
+            // Clear canvas
+            ctx.fillStyle = '#2F4F2F';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw grid
+            ctx.strokeStyle = '#1a3a1a';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= tileCount; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * gridSize, 0);
+                ctx.lineTo(i * gridSize, canvas.height);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(0, i * gridSize);
+                ctx.lineTo(canvas.width, i * gridSize);
+                ctx.stroke();
+            }
+
+            // Draw snake
+            ctx.fillStyle = '#FFD700';
+            for (let segment of snake) {
+                ctx.fillRect(segment.x * gridSize + 2, segment.y * gridSize + 2, gridSize - 4, gridSize - 4);
+                ctx.strokeStyle = '#8B4513';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(segment.x * gridSize + 2, segment.y * gridSize + 2, gridSize - 4, gridSize - 4);
+            }
+
+            // Draw snake head differently
+            if (snake.length > 0) {
+                ctx.fillStyle = '#FF6B6B';
+                ctx.fillRect(snake[0].x * gridSize + 2, snake[0].y * gridSize + 2, gridSize - 4, gridSize - 4);
+                ctx.strokeStyle = '#8B4513';
+                ctx.strokeRect(snake[0].x * gridSize + 2, snake[0].y * gridSize + 2, gridSize - 4, gridSize - 4);
+            }
+
+            // Draw food
+            ctx.fillStyle = '#FF4444';
+            ctx.fillRect(food.x * gridSize + 2, food.y * gridSize + 2, gridSize - 4, gridSize - 4);
+            ctx.strokeStyle = '#CC0000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(food.x * gridSize + 2, food.y * gridSize + 2, gridSize - 4, gridSize - 4);
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (!gameRunning || gamePaused) return;
+
+            // Move snake
+            const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+
+            // Check wall collision
+            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+                gameOver();
+                return;
+            }
+
+            // Check self collision
+            for (let segment of snake) {
+                if (head.x === segment.x && head.y === segment.y) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            snake.unshift(head);
+
+            // Check food collision
+            if (head.x === food.x && head.y === food.y) {
+                score += 10;
+                level = Math.floor(score / 100) + 1;
+                updateScore();
+                generateFood();
+                showQuestion();
+            } else {
+                snake.pop();
+            }
+
+            drawGame();
+        }
+
+        // Show question modal
+        function showQuestion() {
+            gamePaused = true;
+            currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+            
+            document.getElementById('questionText').textContent = currentQuestion.question;
+            
+            const optionsDiv = document.getElementById('answerOptions');
+            optionsDiv.innerHTML = '';
+            
+            currentQuestion.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'answer-btn';
+                button.textContent = `${String.fromCharCode(65 + index)}) ${option}`;
+                button.onclick = () => answerQuestion(index);
+                optionsDiv.appendChild(button);
+            });
+            
+            document.getElementById('questionModal').style.display = 'block';
+        }
+
+        // Handle answer
+        function answerQuestion(selectedIndex) {
+            const buttons = document.querySelectorAll('.answer-btn');
+            
+            buttons.forEach((button, index) => {
+                if (index === currentQuestion.correct) {
+                    button.classList.add('correct');
+                } else if (index === selectedIndex && index !== currentQuestion.correct) {
+                    button.classList.add('incorrect');
+                }
+                button.disabled = true;
+            });
+
+            if (selectedIndex === currentQuestion.correct) {
+                correctAnswers++;
+                score += 20; // Bonus points for correct answer
+                updateScore();
+            }
+
+            setTimeout(() => {
+                document.getElementById('questionModal').style.display = 'none';
+                gamePaused = false;
+            }, 2000);
+        }
+
+        // Update score display
+        function updateScore() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct-answers').textContent = correctAnswers;
+            document.getElementById('level').textContent = level;
+        }
+
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalCorrect').textContent = correctAnswers;
+            document.getElementById('gameOverDiv').style.display = 'block';
+        }
+
+        // Control functions
+        function startGame() {
+            if (!gameRunning) {
+                gameRunning = true;
+                gamePaused = false;
+                document.getElementById('gameOverDiv').style.display = 'none';
+                setInterval(gameLoop, 200 - (level * 10)); // Increase speed with level
+            }
+        }
+
+        function pauseGame() {
+            gamePaused = !gamePaused;
+        }
+
+        function restartGame() {
+            snake = [{x: 10, y: 10}];
+            dx = 0;
+            dy = 0;
+            score = 0;
+            correctAnswers = 0;
+            level = 1;
+            gameRunning = false;
+            gamePaused = false;
+            updateScore();
+            generateFood();
+            drawGame();
+            document.getElementById('gameOverDiv').style.display = 'none';
+        }
+
+        function changeDirection(direction) {
+            if (!gameRunning || gamePaused) return;
+            
+            switch(direction) {
+                case 'UP':
+                    if (dy !== 1) { dx = 0; dy = -1; }
+                    break;
+                case 'DOWN':
+                    if (dy !== -1) { dx = 0; dy = 1; }
+                    break;
+                case 'LEFT':
+                    if (dx !== 1) { dx = -1; dy = 0; }
+                    break;
+                case 'RIGHT':
+                    if (dx !== -1) { dx = 1; dy = 0; }
+                    break;
+            }
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':
+                    e.preventDefault();
+                    changeDirection('UP');
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    changeDirection('DOWN');
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    changeDirection('LEFT');
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    changeDirection('RIGHT');
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    pauseGame();
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (!gameRunning) startGame();
+                    break;
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('questionModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('questionModal')) {
+                document.getElementById('questionModal').style.display = 'none';
+                gamePaused = false;
+            }
+        });
+
+        // Initialize the game
+        initGame();
+    </script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Controle Arduino via USB ou Bluetooth</title>
+<style>
+  :root {
+    --color-primary: #1abc9c;
+    --color-primary-dark: #16a085;
+    --color-bg: #f0f3f4;
+    --color-text: #2c3e50;
+    --color-button-bg: #1abc9c;
+    --color-button-hover-bg: #16a085;
+    --color-error: #e74c3c;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  header {
+    background: var(--color-primary);
+    color: white;
+    padding: 1.4rem;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.6rem;
+    letter-spacing: 0.05rem;
+  }
+  main {
+    max-width: 480px;
+    margin: 1.5rem auto;
+    flex-grow: 1;
+    padding: 0 1rem;
+  }
+  .connection-options {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+  button {
+    flex: 1;
+    padding: 14px 16px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--color-button-bg);
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    user-select: none;
+  }
+  button:hover:enabled {
+    background-color: var(--color-button-hover-bg);
+  }
+  button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+  }
+  #status {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 15px;
+  }
+  #status.error {
+    color: var(--color-error);
+  }
+  #receivedData {
+    background: white;
+    border-radius: 8px;
+    padding: 14px;
+    min-height: 120px;
+    box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    white-space: pre-wrap;
+    overflow-y: auto;
+    max-height: 200px;
+    margin-bottom: 20px;
+    font-family: monospace;
+  }
+  #sendSection {
+    display: flex;
+    gap: 10px;
+  }
+  #sendInput {
+    flex-grow: 1;
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 2px solid #ccc;
+    transition: border-color 0.3s ease;
+  }
+  #sendInput:focus {
+    border-color: var(--color-primary);
+    outline: none;
+  }
+  #sendBtn {
+    background-color: var(--color-button-bg);
+    border-radius: 8px;
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    border: none;
+    padding: 0 20px;
+    transition: background-color 0.3s ease;
+  }
+  #sendBtn:hover:enabled {
+    background-color: var(--color-button-hover-bg);
+  }
+  #sendBtn:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+  }
+  @media (max-width: 400px) {
+    .connection-options {
+      flex-direction: column;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  Controle Arduino via USB ou Bluetooth
+</header>
+<main>
+  <div class="connection-options">
+    <button id="connectBluetoothBtn">Conectar Bluetooth</button>
+    <button id="connectUsbBtn">Conectar USB</button>
+  </div>
+  <div id="status" aria-live="polite">Status: desconectado</div>
+  <div id="receivedData" aria-label="Dados recebidos do Arduino"></div>
+  <div id="sendSection" style="display:none;">
+    <input type="text" id="sendInput" placeholder="Digite o comando para enviar..." aria-label="Campo para digitar comando"/>
+    <button id="sendBtn" disabled>Enviar</button>
+  </div>
+</main>
+<script>
+  // Elementos UI
+  const connectBluetoothBtn = document.getElementById('connectBluetoothBtn');
+  const connectUsbBtn = document.getElementById('connectUsbBtn');
+  const statusEl = document.getElementById('status');
+  const receivedDataEl = document.getElementById('receivedData');
+  const sendSection = document.getElementById('sendSection');
+  const sendInput = document.getElementById('sendInput');
+  const sendBtn = document.getElementById('sendBtn');
+
+  // Bluetooth Vars
+  let bluetoothDevice = null;
+  let gattServer = null;
+  let primaryService = null;
+  let writeCharacteristic = null;
+  let notifyCharacteristic = null;
+
+  // USB Serial Vars
+  let serialPort = null;
+  let reader = null;
+  let inputDone = null;
+  let outputDone = null;
+  let inputStream = null;
+  let writer = null;
+  let keepReading = true;
+
+  // Bluetooth UART Service UUIDs (Nordic UART Service)
+  const BT_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+  const BT_CHARACTERISTIC_UUID_TX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
+  const BT_CHARACTERISTIC_UUID_RX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
+
+  // Atual modo ativo: 'bluetooth' ou 'usb' ou null
+  let activeMode = null;
+
+  function logStatus(message, isError=false) {
+    statusEl.textContent = 'Status: ' + message;
+    statusEl.classList.toggle('error', isError);
+  }
+
+  function appendReceivedData(data) {
+    receivedDataEl.textContent += data + '\n';
+    receivedDataEl.scrollTop = receivedDataEl.scrollHeight;
+  }
+
+  // ---- BLUETOOTH FUNCTIONS ----
+  async function connectBluetooth() {
+    if (!navigator.bluetooth) {
+      logStatus('Bluetooth não suportado neste navegador.', true);
+      return;
+    }
+    try {
+      logStatus('Solicitando dispositivo Bluetooth...');
+      bluetoothDevice = await navigator.bluetooth.requestDevice({
+        filters: [{ services: [BT_SERVICE_UUID] }]
+      });
+
+      bluetoothDevice.addEventListener('gattserverdisconnected', onBluetoothDisconnected);
+
+      logStatus('Conectando ao GATT Server...');
+      gattServer = await bluetoothDevice.gatt.connect();
+
+      primaryService = await gattServer.getPrimaryService(BT_SERVICE_UUID);
+
+      writeCharacteristic = await primaryService.getCharacteristic(BT_CHARACTERISTIC_UUID_TX);
+      notifyCharacteristic = await primaryService.getCharacteristic(BT_CHARACTERISTIC_UUID_RX);
+
+      await notifyCharacteristic.startNotifications();
+      notifyCharacteristic.addEventListener('characteristicvaluechanged', handleBluetoothNotifications);
+
+      logStatus('Conectado ao dispositivo Bluetooth: ' + bluetoothDevice.name);
+      activeMode = 'bluetooth';
+      onConnected();
+    } catch (error) {
+      console.error(error);
+      logStatus('Falha na conexão Bluetooth: ' + error.message, true);
+    }
+  }
+
+  function onBluetoothDisconnected() {
+    logStatus('Bluetooth desconectado');
+    resetConnection();
+  }
+
+  function handleBluetoothNotifications(event) {
+    const value = event.target.value;
+    const decoder = new TextDecoder('utf-8');
+    const data = decoder.decode(value);
+    appendReceivedData(data);
+  }
+
+  async function disconnectBluetooth() {
+    if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+      logStatus('Desconectando Bluetooth...');
+      await bluetoothDevice.gatt.disconnect();
+    }
+    resetConnection();
+    logStatus('Bluetooth desconectado');
+  }
+
+  // ---- USB SERIAL FUNCTIONS ----
+  async function connectUsb() {
+    if (!('serial' in navigator)) {
+      logStatus('Web Serial API não suportado neste navegador.', true);
+      return;
+    }
+    try {
+      logStatus('Solicitando porta serial...');
+      serialPort = await navigator.serial.requestPort();
+      await serialPort.open({ baudRate: 9600 });
+
+      const encoder = new TextEncoderStream();
+      outputDone = encoder.readable.pipeTo(serialPort.writable);
+      writer = encoder.writable.getWriter();
+
+      const decoder = new TextDecoderStream();
+      inputDone = serialPort.readable.pipeTo(decoder.writable);
+      inputStream = decoder.readable;
+      reader = inputStream.getReader();
+
+      keepReading = true;
+      readSerialLoop();
+
+      logStatus('Conectado via USB Serial');
+      activeMode = 'usb';
+      onConnected();
+    } catch (error) {
+      console.error(error);
+      logStatus('Falha na conexão USB: ' + error.message, true);
+    }
+  }
+
+  async function readSerialLoop() {
+    while (serialPort.readable && keepReading) {
+      try {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+        if (value) {
+          appendReceivedData(value);
+        }
+      } catch (error) {
+        logStatus('Erro na leitura USB: ' + error.message, true);
+        break;
+      }
+    }
+  }
+
+  async function disconnectUsb() {
+    keepReading = false;
+    if (reader) {
+      await reader.cancel();
+      await inputDone.catch(() => {});
+      reader = null;
+      inputDone = null;
+    }
+    if (writer) {
+      await writer.close();
+      await outputDone;
+      writer = null;
+      outputDone = null;
+    }
+    if (serialPort) {
+      await serialPort.close();
+      serialPort = null;
+    }
+    resetConnection();
+    logStatus('USB desconectado');
+  }
+
+  // ---- COMMON FUNCTIONS ----
+  async function onConnected() {
+    sendSection.style.display = 'flex';
+    sendBtn.disabled = false;
+    connectBluetoothBtn.disabled = true;
+    connectUsbBtn.disabled = true;
+    if (activeMode === 'bluetooth') {
+      connectBluetoothBtn.textContent = 'Desconectar Bluetooth';
+      connectUsbBtn.textContent = 'Conectar USB';
+      connectUsbBtn.disabled = false;
+    } else if (activeMode === 'usb') {
+      connectUsbBtn.textContent = 'Desconectar USB';
+      connectBluetoothBtn.textContent = 'Conectar Bluetooth';
+      connectBluetoothBtn.disabled = false;
+    }
+    receivedDataEl.textContent = '';
+  }
+
+  function resetConnection() {
+    sendSection.style.display = 'none';
+    sendBtn.disabled = true;
+    connectBluetoothBtn.disabled = false;
+    connectUsbBtn.disabled = false;
+    connectBluetoothBtn.textContent = 'Conectar Bluetooth';
+    connectUsbBtn.textContent = 'Conectar USB';
+    activeMode = null;
+  }
+
+  async function disconnect() {
+    if (activeMode === 'bluetooth') {
+      await disconnectBluetooth();
+    } else if (activeMode === 'usb') {
+      await disconnectUsb();
+    }
+  }
+
+  async function sendData() {
+    const text = sendInput.value.trim();
+    if (!text) return;
+
+    try {
+      if (activeMode === 'bluetooth' && writeCharacteristic) {
+        const encoder = new TextEncoder();
+        await writeCharacteristic.writeValue(encoder.encode(text));
+        appendReceivedData('Enviado: ' + text);
+      } else if (activeMode === 'usb' && writer) {
+        await writer.write(text + '\n');
+        appendReceivedData('Enviado: ' + text);
+      } else {
+        logStatus('Não está conectado.', true);
+      }
+      sendInput.value = '';
+    } catch (error) {
+      logStatus('Erro ao enviar dados: ' + error.message, true);
+    }
+  }
+
+  // ---- EVENT LISTENERS ----
+  connectBluetoothBtn.addEventListener('click', async () => {
+    if (activeMode === 'bluetooth') {
+      await disconnect();
+    } else {
+      await connectBluetooth();
+    }
+  });
+
+  connectUsbBtn.addEventListener('click', async () => {
+    if (activeMode === 'usb') {
+      await disconnect();
+    } else {
+      await connectUsb();
+    }
+  });
+
+  sendBtn.addEventListener('click', sendData);
+
+  sendInput.addEventListener('keyup', (event) => {
+    if (event.key === 'Enter' && !sendBtn.disabled) {
+      sendData();
+    }
+  });
+</script>
+</body>
+</html>
